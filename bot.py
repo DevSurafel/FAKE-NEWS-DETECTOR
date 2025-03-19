@@ -34,22 +34,85 @@ headers_ai = {"Authorization": f"Bearer {API_TOKEN_AI_MODEL}"}
 # Store conversation history for each user
 user_conversation_history: Dict[int, List[str]] = {}
 
+# Constants
+MAX_TRANSLATION_LENGTH = 400  # Setting lower than 500 to be safe
+
 # HTML entity character fix
 def fix_html_entities(text: str) -> str:
     """Fix HTML entities in translated text."""
-    return text.replace("&#39;", "'").replace("&quot;", '"').replace("&amp;", "&")
+    replacements = {
+        "&#39;": "'", 
+        "&quot;": '"', 
+        "&amp;": "&",
+        "&#10;": "\n"  # Fix for newline character
+    }
+    
+    for entity, replacement in replacements.items():
+        text = text.replace(entity, replacement)
+    
+    return text
+
+def chunk_text(text: str, max_length: int) -> List[str]:
+    """Split text into chunks of max_length characters, trying to break at sentence boundaries."""
+    # If text is short enough, return it as is
+    if len(text) <= max_length:
+        return [text]
+    
+    chunks = []
+    sentences = re.split(r'(?<=[.!?])\s+', text)
+    current_chunk = ""
+    
+    for sentence in sentences:
+        # If single sentence is longer than max_length, split it by words
+        if len(sentence) > max_length:
+            words = sentence.split()
+            temp_chunk = ""
+            
+            for word in words:
+                if len(temp_chunk) + len(word) + 1 <= max_length:
+                    temp_chunk += " " + word if temp_chunk else word
+                else:
+                    chunks.append(temp_chunk)
+                    temp_chunk = word
+            
+            if temp_chunk:
+                current_chunk += " " + temp_chunk if current_chunk else temp_chunk
+        # Otherwise, try to add the sentence to the current chunk
+        elif len(current_chunk) + len(sentence) + 1 <= max_length:
+            current_chunk += " " + sentence if current_chunk else sentence
+        else:
+            chunks.append(current_chunk)
+            current_chunk = sentence
+    
+    if current_chunk:
+        chunks.append(current_chunk)
+    
+    return chunks
 
 async def translate_text(text: str, source_lang: str, target_lang: str) -> str:
-    """Translate text using the translate library with error handling."""
+    """Translate text using the translate library with chunking for long texts."""
     try:
-        translator = Translator(from_lang=source_lang, to_lang=target_lang)
-        translation = translator.translate(text)
+        # Split text into chunks if it's too long
+        chunks = chunk_text(text, MAX_TRANSLATION_LENGTH)
+        translated_chunks = []
         
-        # Fix HTML entities that might appear in translations
-        translation = fix_html_entities(translation)
+        for chunk in chunks:
+            translator = Translator(from_lang=source_lang, to_lang=target_lang)
+            translated_chunk = translator.translate(chunk)
+            
+            # Fix HTML entities
+            translated_chunk = fix_html_entities(translated_chunk)
+            translated_chunks.append(translated_chunk)
+            
+            # Add a small delay between translation requests to avoid rate limiting
+            if len(chunks) > 1:
+                await asyncio.sleep(0.5)
         
-        logger.info(f"Successfully translated from {source_lang} to {target_lang}: {translation}")
-        return translation
+        # Join the translated chunks
+        full_translation = " ".join(translated_chunks)
+        logger.info(f"Successfully translated from {source_lang} to {target_lang} (in {len(chunks)} chunks)")
+        return full_translation
+        
     except Exception as e:
         logger.error(f"Translation error from {source_lang} to {target_lang}: {e}")
         if source_lang == "om" and target_lang == "en":
@@ -86,6 +149,10 @@ async def get_ai_response(user_id: int, text: str, max_retries: int = 3, retry_d
             # Extract just the assistant's response
             ai_response = ai_response.split("Assistant:")[-1].strip()
             ai_response = re.sub(r"User:.*", "", ai_response).strip()
+            
+            # Limit response length to prevent very long responses
+            if len(ai_response) > 1000:
+                ai_response = ai_response[:1000] + "..."
             
             # Update conversation history
             if user_id in user_conversation_history:
