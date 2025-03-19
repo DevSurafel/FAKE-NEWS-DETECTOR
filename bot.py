@@ -11,7 +11,7 @@ import requests
 import asyncio
 import nest_asyncio
 import re
-from transformers import pipeline
+from googletrans import Translator
 
 nest_asyncio.apply()
 
@@ -27,28 +27,16 @@ API_URL_AI_MODEL = os.getenv("HF_AI_MODEL_API_URL")
 
 headers_ai = {"Authorization": f"Bearer {API_TOKEN_AI_MODEL}"}
 
-# Load translation pipelines
-try:
-    oromo_to_english_translator = pipeline("translation_en_to_xx", model="Helsinki-NLP/opus-mt-om-en")
-    english_to_oromo_translator = pipeline("translation_en_to_xx", model="Helsinki-NLP/opus-mt-en-om")
-except Exception as e:
-    logger.error(f"Failed to load translation models: {e}")
-    raise
+# Initialize translator
+translator = Translator()
 
 user_conversation_history = {}
 
 async def translate_text(text: str, source_lang: str, target_lang: str) -> str:
-    """Translate text using Hugging Face translation models."""
+    """Translate text using googletrans."""
     try:
-        if source_lang == "om" and target_lang == "en":
-            translation = oromo_to_english_translator(text)
-        elif source_lang == "en" and target_lang == "om":
-            translation = english_to_oromo_translator(text)
-        else:
-            logger.error(f"Unsupported translation: {source_lang} to {target_lang}")
-            return text  # Return original text if translation is not supported
-
-        translated_text = translation[0]["translation_text"]
+        translation = translator.translate(text, src=source_lang, dest=target_lang)
+        translated_text = translation.text
         logger.info(f"Successfully translated from {source_lang} to {target_lang}: {translated_text}")
         return translated_text
     except Exception as e:
