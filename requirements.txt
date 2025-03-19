@@ -2,5 +2,5 @@ python-dotenv==1.0.0
 python-telegram-bot==20.3
 requests==2.31.0
 transformers==4.34.1
-torch==1.13.1+cpu --index-url https://download.pytorch.org/whl/cpu
+torch==2.1.0 --index-url https://download.pytorch.org/whl/cpu
 nest-asyncio==1.5.8
