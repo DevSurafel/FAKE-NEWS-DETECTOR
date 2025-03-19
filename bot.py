@@ -225,7 +225,7 @@ class AIChatBot:
 
     async def start(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         """Handle the /start command with Oromo welcome message."""
-        welcome_message = "Baga nagaan dhuftan! Ani moodeela afaan keessaniiti. Afaan Oromootiin waan hunda keessan waliin haasa'a. Gaaffii kamiinuu natti qabaa!"
+        welcome_message = "Baga nagaan dhuftan! Ani moodeela afaan Oromooti. Maqaankoo Kabbabush jedhama. Afaan Oromootiin waan hunda keessan na waliin haasa'a. Gaaffii kamiinuu na gaafadhaa!"
         await update.message.reply_text(welcome_message)
 
     async def help_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
