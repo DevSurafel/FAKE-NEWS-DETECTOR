@@ -11,7 +11,7 @@ import requests
 import asyncio
 import nest_asyncio
 import re
-from googletrans import Translator
+from translate import Translator
 
 nest_asyncio.apply()
 
@@ -28,17 +28,17 @@ API_URL_AI_MODEL = os.getenv("HF_AI_MODEL_API_URL")
 headers_ai = {"Authorization": f"Bearer {API_TOKEN_AI_MODEL}"}
 
 # Initialize translator
-translator = Translator()
+translator = Translator(to_lang="en", from_lang="om")
 
 user_conversation_history = {}
 
 async def translate_text(text: str, source_lang: str, target_lang: str) -> str:
-    """Translate text using googletrans."""
+    """Translate text using the translate library."""
     try:
-        translation = translator.translate(text, src=source_lang, dest=target_lang)
-        translated_text = translation.text
-        logger.info(f"Successfully translated from {source_lang} to {target_lang}: {translated_text}")
-        return translated_text
+        translator = Translator(from_lang=source_lang, to_lang=target_lang)
+        translation = translator.translate(text)
+        logger.info(f"Successfully translated from {source_lang} to {target_lang}: {translation}")
+        return translation
     except Exception as e:
         logger.error(f"Translation error from {source_lang} to {target_lang}: {e}")
         return text  # Return original text if translation fails
