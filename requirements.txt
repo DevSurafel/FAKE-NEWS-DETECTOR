@@ -1,5 +1,5 @@
 python-dotenv==1.0.0
 python-telegram-bot==20.3
 requests==2.31.0
-translate==3.9.0
+translate==3.6.1
 nest-asyncio==1.5.8
