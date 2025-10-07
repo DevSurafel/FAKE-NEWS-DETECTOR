@@ -296,9 +296,7 @@ Expected TSV format with columns:
 4. Add tests
 5. Submit a pull request
 
-## 📄 License
 
-[Add your license here]
 
 ## 🙏 Acknowledgments
 
